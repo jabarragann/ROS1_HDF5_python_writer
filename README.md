@@ -8,3 +8,8 @@ Package to save data from rostopics into HDF5 format
 The package [h5web][1] can be used from the a web browser or as a visual studio code extension to visualize the HDF5 files.
 
 [1]: https://github.com/silx-kit/h5web
+
+
+## TODO:
+
+- [ ] Create YAML configuration file. 

@@ -1,0 +1,16 @@
+data_sources:
+    - image_l_data
+
+image_l_data:
+    ros:
+        topic: hello
+        msg: Image
+        class_attrib: left_rgb_img
+        processing_cb: processing_data_pose
+
+    h5py_config:
+        dataset_name:
+        chunk_shape: (4,10,10)
+        max_shape: (None, 10, 10)
+        compression: "gzip"
+        dtype: np.uint8

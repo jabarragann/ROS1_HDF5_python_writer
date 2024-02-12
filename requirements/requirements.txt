@@ -1,0 +1,8 @@
+h5py
+pytest
+numpy
+matplotlib
+seaborn
+rich
+click
+tqdm

@@ -31,6 +31,8 @@ def hdf5_writer_conf_100(config_batch_100):
 
     yield h5_writer
 
+    # teardown fixture system of pytest
+    # https://docs.pytest.org/en/7.1.x/how-to/fixtures.html
     h5_writer.file_path.unlink()
 
 
@@ -115,11 +117,11 @@ def test_multichunk_writing_and_datatypes(
 
 
 def test_writin_one_chunk_and_half(
-    hdf5_writer_conf_100: HDF5Writer, config_batch_100: Hdf5FullDatasetConfig 
+    hdf5_writer_conf_100: HDF5Writer, config_batch_100: Hdf5FullDatasetConfig
 ):
 
     dataset_config = config_batch_100
-    h5_writer = hdf5_writer_conf_100 
+    h5_writer = hdf5_writer_conf_100
     data_container = DataContainer(dataset_config)
 
     chunk_size = dataset_config[0].chunk_size

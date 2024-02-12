@@ -9,7 +9,7 @@ from hdf5_saver.Hdf5Writer import (
 )
 from hdf5_saver.SyncRosClient import DatasetSample, SyncRosClient
 from hdf5_saver.custom_configs.hand_eye_dvrk_config import (
-    HandEyeDVRKConfig,
+    HandEyeHdf5Config,
 )
 from queue import Empty, Queue
 from threading import Thread, Lock
@@ -18,10 +18,10 @@ import click
 QUEUE_MAX_SIZE = 1000
 dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
     [
-        HandEyeDVRKConfig.camera_l,
-        HandEyeDVRKConfig.camera_r,
-        HandEyeDVRKConfig.psm1_measured_cp,
-        HandEyeDVRKConfig.psm1_measured_jp,
+        HandEyeHdf5Config.camera_l,
+        HandEyeHdf5Config.camera_r,
+        HandEyeHdf5Config.psm1_measured_cp,
+        HandEyeHdf5Config.psm1_measured_jp,
     ]
 )
 

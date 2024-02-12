@@ -7,12 +7,13 @@ import rospy
 from dataclasses import dataclass, field
 from abc import ABC
 import message_filters
-from hdf5_saver.SaverConfig import (
-    RosTopics,
+from hdf5_saver.custom_configs.hand_eye_dvrk_config import (
+    HandEyeRostopicsConfig,
     get_topics_processing_cb,
     selected_topics,
     topic_to_key_in_container,
 )
+from queue import Empty, Queue
 
 
 @dataclass
@@ -23,7 +24,7 @@ class DatasetSample:
     measured_jp: np.ndarray = None
 
     @classmethod
-    def from_dict(cls: DatasetSample, data: dict[RosTopics, np.ndarray]):
+    def from_dict(cls: DatasetSample, data: dict[HandEyeRostopicsConfig, np.ndarray]):
         # Map the keys to the class attributes
         dict_variables = {}
         for ros_topic_config, value in data.items():
@@ -94,7 +95,9 @@ class SyncRosClient(AbstractSimulationClient):
 
     def __post_init__(self):
         if self.data_queue is None:
-            raise ValueError("data_queue should be provided in constructor")
+            raise ValueError(
+                "data_queue should be provided in constructor as a keyword arg"
+            )
 
         super().__post_init__()
         self.subscribers = []
@@ -125,7 +128,8 @@ class SyncRosClient(AbstractSimulationClient):
 
 
 def main():
-    sync_client = SyncRosClient()
+    data_queue = Queue()
+    sync_client = SyncRosClient(data_queue=data_queue)
     sync_client.wait_for_data()
     data = sync_client.get_data()
     print("data received!")

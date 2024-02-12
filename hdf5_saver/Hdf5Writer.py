@@ -198,12 +198,12 @@ class HDF5Writer:
 
 def test1():
     from hdf5_saver.custom_configs.hand_eye_dvrk_config import (
-        HandEyeDVRKConfig,
+        HandEyeHdf5Config,
     )
 
     print("test1")
     dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
-        [HandEyeDVRKConfig.camera_l, HandEyeDVRKConfig.camera_r]
+        [HandEyeHdf5Config.camera_l, HandEyeHdf5Config.camera_r]
     )
 
     h5_writer = HDF5Writer(Path("temp"), dataset_config)
@@ -212,10 +212,10 @@ def test1():
 
     for i in range(dataset_config[0].chunk_size):
         data_dict = {}
-        data_dict[HandEyeDVRKConfig.camera_l.value[0]] = (
+        data_dict[HandEyeHdf5Config.camera_l.value[0]] = (
             np.ones((480, 640, 3), dtype=np.uint8) + i
         )
-        data_dict[HandEyeDVRKConfig.camera_r.value[0]] = (
+        data_dict[HandEyeHdf5Config.camera_r.value[0]] = (
             np.ones((480, 640, 3), dtype=np.uint8) + 2 * i
         )
 
@@ -237,12 +237,12 @@ def test1():
 
 def test2():
     from hdf5_saver.custom_configs.hand_eye_dvrk_config import (
-        HandEyeDVRKConfig,
+        HandEyeHdf5Config,
     )
 
     print("test2")
     dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
-        [HandEyeDVRKConfig.camera_l]
+        [HandEyeHdf5Config.camera_l]
     )
 
     h5_writer = HDF5Writer(Path("temp"), dataset_config)
@@ -257,7 +257,7 @@ def test2():
                 data_container = DataContainer(dataset_config)
 
             data_dict = {}
-            data_dict[HandEyeDVRKConfig.camera_l.value[0]] = (
+            data_dict[HandEyeHdf5Config.camera_l.value[0]] = (
                 np.ones((480, 640, 3), dtype=np.uint8) + i
             )
 

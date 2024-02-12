@@ -7,7 +7,7 @@ from sensor_msgs.msg import Image
 import numpy as np
 from enum import Enum
 import numpy as np
-from hdf5_saver.SaverConfig import *
+from hdf5_saver.RosUtilities import *
 
 ##############################
 # Handeye calibration config

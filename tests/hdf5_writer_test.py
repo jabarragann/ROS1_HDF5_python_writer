@@ -116,7 +116,7 @@ def test_multichunk_writing_and_datatypes(
         assert np.all(img_data[255] == (np.zeros((480, 640, 3), dtype=np.uint8)))
 
 
-def test_writin_one_chunk_and_half(
+def test_writing_one_chunk_and_half(
     hdf5_writer_conf_100: HDF5Writer, config_batch_100: Hdf5FullDatasetConfig
 ):
 

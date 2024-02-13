@@ -147,10 +147,11 @@ class TimerCb(Thread):
 
 @click.command()
 @click.option("--output_dir", type=click.Path(file_okay=False), default="./temp")
-def main(output_dir: Path):
+@click.option("--append_to_name", type=str, default="")
+def main(output_dir: Path, append_to_name: str):
 
     ts = time.strftime("%Y%m%d_%H%M%S")
-    output_dir = Path(output_dir) / (ts + "_raw_dataset")
+    output_dir = Path(output_dir) / (ts + "_raw_dataset_" + append_to_name)
     data_queue = Queue(maxsize=QUEUE_MAX_SIZE)
     ros_client = SyncRosClient(
         data_queue=data_queue, dataset_config=dataset_config, collection_freq=5

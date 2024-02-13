@@ -68,9 +68,13 @@ class TimerCb(Thread):
                 self.dataset_root / "pose_data.csv"
             )
 
+        print(f"total images: {self.saved_points}")
+        print(f"total cp: {self.pose_data.shape[0]}")
+        print(f"total jp: {self.joint_data.shape[0]}")
         print(f"Collected {self.saved_points} samples")
 
     def record_data_loop(self):
+        freq_timer = time.time()
         while not self.terminate_recording:
             data = None
             try:
@@ -79,31 +83,34 @@ class TimerCb(Thread):
                 pass
 
             if data is not None:
-                print(data.keys())
-                for config in self.hdf5_writer.dataset_config:
-                    if config.dataset_name == "psm1_measured_jp":
-                        print("jp")
-                        self.joint_data.append(data[config.dataset_name].reshape(1, -1))
-                    elif config.dataset_name == "psm1_measured_cp":
-                        print("cp")
-                        self.pose_data.append(
-                            data[config.dataset_name].flatten().reshape(1, -1)
-                        )
-                    elif config.dataset_name == "camera_l":
-                        print("img")
-                        img_pth = str(
-                            self.img_path / f"camera_l_{self.saved_points:05d}.jpeg"
-                        )
-                        cv2.imwrite(img_pth, data[config.dataset_name])
-                    else:
-                        raise ValueError(f"Unknown dataset name: {config.dataset_name}")
-
+                print(f"Data writing freq: {1/(time.time() - freq_timer):0.3f}")
+                writing_time = time.time()
+                self.write_data(data)
                 self.saved_points += 1
+                freq_timer = time.time()
+
+                print("Data written in: ", (time.time() - writing_time) * 1000, "ms")
+                writing_time = time.time()
+
             time.sleep(0.005)
 
-    def write_data_and_empty_container(self):
-        self.hdf5_writer.write_chunk(self.data_container)
-        self.data_container = DataContainer(self.hdf5_writer.dataset_config)
+    def write_data(self, data: DatasetSample):
+        print(data.keys())
+        for config in self.hdf5_writer.dataset_config:
+            if config.dataset_name == "psm1_measured_jp":
+                print("jp")
+                self.joint_data.append(data[config.dataset_name].reshape(1, -1))
+            elif config.dataset_name == "psm1_measured_cp":
+                print("cp")
+                self.pose_data.append(
+                    data[config.dataset_name].flatten().reshape(1, -1)
+                )
+            elif config.dataset_name == "camera_l":
+                print("img")
+                img_pth = str(self.img_path / f"camera_l_{self.saved_points:05d}.jpeg")
+                # cv2.imwrite(img_pth, data[config.dataset_name])
+            else:
+                raise ValueError(f"Unknown dataset name: {config.dataset_name}")
 
     def convert_raw_sample_to_dict(self, raw_sample: DatasetSample):
         data_dict = {}

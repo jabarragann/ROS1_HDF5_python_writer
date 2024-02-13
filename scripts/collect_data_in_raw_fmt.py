@@ -23,7 +23,7 @@ QUEUE_MAX_SIZE = 1000
 dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
     [
         HandEyeHdf5Config.camera_l,
-        # HandEyeHdf5Config.camera_r,
+        HandEyeHdf5Config.camera_r,
         HandEyeHdf5Config.psm1_measured_cp,
         HandEyeHdf5Config.psm1_measured_jp,
     ]
@@ -35,8 +35,8 @@ class TimerCb(Thread):
     def __init__(self, dataset_root: Path, data_queue: Queue, hdf5_writer: HDF5Writer):
         super(TimerCb, self).__init__()
         self.dataset_root = dataset_root
-        self.img_path = self.dataset_root / "imgs"
-        self.img_path.mkdir(parents=True, exist_ok=True)
+        self.create_image_folders()
+
         self.data_queue: Queue[DatasetSample] = data_queue
         self.hdf5_writer = hdf5_writer
         self.data_container = DataContainer(self.hdf5_writer.dataset_config)
@@ -50,6 +50,16 @@ class TimerCb(Thread):
         self.joint_headers = ["j1","j2","j3","j4","j5","j6"]
         self.pose_headers = ["p1","p2","p3","p4","p5","p6","p7","p8","p9","p10","p11","p12","p13","p14","p15","p16"] 
         # fmt: on
+
+    def create_image_folders(self):
+        self.img_path = self.dataset_root / "imgs"
+        self.img_path.mkdir(parents=True, exist_ok=True)
+
+        self.img_path_l = self.img_path / "left"
+        self.img_path_l.mkdir(parents=True, exist_ok=True)
+
+        self.img_path_r = self.img_path / "right"
+        self.img_path_r.mkdir(parents=True, exist_ok=True)
 
     def run(self):
         self.log_time = time.time()
@@ -111,8 +121,16 @@ class TimerCb(Thread):
                 .reshape(1, -1)
             )
         if HandEyeHdf5Config.camera_l.value[0] in data:
-            img_pth = str(self.img_path / f"camera_l_{self.saved_points:05d}.jpeg")
+            img_pth = str(
+                self.img_path / "left" / f"camera_l_{self.saved_points:05d}.jpeg"
+            )
             cv2.imwrite(img_pth, data[HandEyeHdf5Config.camera_l.value[0]])
+
+        if HandEyeHdf5Config.camera_r.value[0] in data:
+            img_pth = str(
+                self.img_path / "right" / f"camera_r_{self.saved_points:05d}.jpeg"
+            )
+            cv2.imwrite(img_pth, data[HandEyeHdf5Config.camera_r.value[0]])
 
     def convert_raw_sample_to_dict(self, raw_sample: DatasetSample):
         data_dict = {}
@@ -140,7 +158,9 @@ def main(output_dir: Path):
     hdf5_writer = HDF5Writer(output_dir, dataset_config)
     timer_cb = TimerCb(output_dir, data_queue, hdf5_writer)
 
+    print("waiting for first data sample ...")
     ros_client.wait_for_data()
+    print("starting data recording ...")
     timer_cb.start()
 
     rospy.spin()

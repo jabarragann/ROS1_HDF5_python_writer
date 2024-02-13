@@ -52,15 +52,13 @@ class TimerCb(Thread):
         # fmt: on
 
     def run(self):
-        log_time = time.time()
+        self.log_time = time.time()
 
         try:
             self.record_data_loop()
         finally:
-            self.joint_data = np.vstack(self.joint_data)
-            self.pose_data = np.vstack(self.pose_data)
-            print(self.joint_data.shape)
-            print(self.pose_data.shape)
+            self.joint_data: np.ndarray = np.vstack(self.joint_data)
+            self.pose_data: np.ndarray = np.vstack(self.pose_data)
             pd.DataFrame(self.joint_data, columns=self.joint_headers).to_csv(
                 self.dataset_root / "joint_data.csv"
             )
@@ -68,12 +66,14 @@ class TimerCb(Thread):
                 self.dataset_root / "pose_data.csv"
             )
 
-        print(f"total images: {self.saved_points}")
-        print(f"total cp: {self.pose_data.shape[0]}")
-        print(f"total jp: {self.joint_data.shape[0]}")
+        print(f"total images:    {self.saved_points}")
+        print(f"total cp:        {self.pose_data.shape[0]}")
+        print(f"total jp:        {self.joint_data.shape[0]}")
+        print(f"Data queue size: {self.data_queue.qsize()}")
         print(f"Collected {self.saved_points} samples")
 
     def record_data_loop(self):
+        print("writing data ....")
         freq_timer = time.time()
         while not self.terminate_recording:
             data = None
@@ -83,34 +83,36 @@ class TimerCb(Thread):
                 pass
 
             if data is not None:
-                print(f"Data writing freq: {1/(time.time() - freq_timer):0.3f}")
+                # print(f"Data writing freq: {1/(time.time() - freq_timer):0.3f}")
                 writing_time = time.time()
                 self.write_data(data)
                 self.saved_points += 1
                 freq_timer = time.time()
 
-                print("Data written in: ", (time.time() - writing_time) * 1000, "ms")
+                # print(f"Data written in: {(time.time() - writing_time) * 1000:0.03f}ms")
                 writing_time = time.time()
+
+            if time.time() - self.log_time > 4:
+                print(f"Samples saved:   {self.saved_points}")
+                print(f"Data queue size: {self.data_queue.qsize()}\n")
+                self.log_time = time.time()
 
             time.sleep(0.005)
 
     def write_data(self, data: DatasetSample):
-        print(data.keys())
-        for config in self.hdf5_writer.dataset_config:
-            if config.dataset_name == "psm1_measured_jp":
-                print("jp")
-                self.joint_data.append(data[config.dataset_name].reshape(1, -1))
-            elif config.dataset_name == "psm1_measured_cp":
-                print("cp")
-                self.pose_data.append(
-                    data[config.dataset_name].flatten().reshape(1, -1)
-                )
-            elif config.dataset_name == "camera_l":
-                print("img")
-                img_pth = str(self.img_path / f"camera_l_{self.saved_points:05d}.jpeg")
-                # cv2.imwrite(img_pth, data[config.dataset_name])
-            else:
-                raise ValueError(f"Unknown dataset name: {config.dataset_name}")
+        if HandEyeHdf5Config.psm1_measured_jp.value[0] in data:
+            self.joint_data.append(
+                data[HandEyeHdf5Config.psm1_measured_jp.value[0]].reshape(1, -1)
+            )
+        if HandEyeHdf5Config.psm1_measured_cp.value[0] in data:
+            self.pose_data.append(
+                data[HandEyeHdf5Config.psm1_measured_cp.value[0]]
+                .flatten()
+                .reshape(1, -1)
+            )
+        if HandEyeHdf5Config.camera_l.value[0] in data:
+            img_pth = str(self.img_path / f"camera_l_{self.saved_points:05d}.jpeg")
+            cv2.imwrite(img_pth, data[HandEyeHdf5Config.camera_l.value[0]])
 
     def convert_raw_sample_to_dict(self, raw_sample: DatasetSample):
         data_dict = {}

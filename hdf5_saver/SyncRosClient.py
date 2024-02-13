@@ -12,12 +12,9 @@ from queue import Empty, Queue
 
 
 @dataclass
-class DatasetSample:
+class DatasetSample(dict):
     dataset_config: Hdf5FullDatasetConfig
     data_dict: Dict[str, np.ndarray] = field(default=dict, init=False)
-
-    def add_data(self, key, value):
-        self.data_dict[key] = value
 
     def copy_from_dict(self, data: dict[str, np.ndarray]):
         self.data_dict = {}
@@ -27,8 +24,11 @@ class DatasetSample:
         except KeyError as e:
             raise KeyError(f"Data for {config.dataset_name} is missing")
 
-    def __getitem__(self, key):
-        return self.data_dict[key]
+    def is_complete(self) -> bool:
+        bool_checks = []
+        for config in self.dataset_config:
+            bool_checks.append(config.dataset_name in self.data_dict)
+        return all(bool_checks)
 
     def to_dict(self) -> Dict[str, np.ndarray]:
         return self.data_dict
@@ -119,13 +119,13 @@ class SyncRosClient(AbstractSimulationClient):
         time.sleep(0.25)
 
     def cb(self, *inputs):
-        raw_data_dict = {}
+        raw_data = DatasetSample(self.dataset_config)
 
         config: Hdf5EntryConfig
         for input_msg, config in zip(inputs, self.dataset_config):
-            raw_data_dict[config.dataset_name] = config.processing_cb(input_msg)
+            raw_data[config.dataset_name] = config.processing_cb(input_msg)
 
-        self.raw_data = raw_data_dict 
+        self.raw_data = raw_data
 
         if time.time() - self.collection_timer > 1 / self.collection_freq:
             # print(f"Collection freq: {1/(time.time() - self.collection_timer)}")
@@ -165,6 +165,8 @@ def main():
     print(f"queue size {data_queue.qsize()}")
 
     rospy.spin()
+
+    print(f"\nqueue size {data_queue.qsize()}")
 
 
 if __name__ == "__main__":

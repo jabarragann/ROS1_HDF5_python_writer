@@ -118,7 +118,6 @@ class HDF5Writer:
         self._internal_idx = 0
 
     def _create_path(self) -> Path:
-        print(type(self.output_dir))
         if not self.output_dir.exists():
             self.output_dir.mkdir(parents=True, exist_ok=True)
 

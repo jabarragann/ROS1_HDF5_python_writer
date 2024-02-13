@@ -29,7 +29,8 @@ camera_l = (
 """
 # Original dvrk resolution: 1024, 1280
 _chunk = 100
-image_processor = get_image_processor_with_resize((640, 480))
+resize_image_processor = get_image_processor_with_resize((640, 480))
+image_processor = get_image_processor()
 
 
 class HandEyeRostopicsConfig(Enum):
@@ -47,7 +48,7 @@ class HandEyeRostopicsConfig(Enum):
 
 
 class HandEyeHdf5Config(Enum):
-    camera_l = (
+    camera_l_resized = (
         "camera_l",
         (_chunk, 480, 640, 3),
         (None, 480, 640, 3),
@@ -55,7 +56,17 @@ class HandEyeHdf5Config(Enum):
         np.uint8,
         HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[0],
         HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[1],
-        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[2],
+        resize_image_processor,
+    )
+    camera_l = (
+        "camera_l",
+        (_chunk, 1024, 1280, 3),
+        (None, 1024, 1280, 3),
+        "gzip",
+        np.uint8,
+        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[0],
+        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[1],
+        image_processor,
     )
     camera_r = (
         "camera_r",

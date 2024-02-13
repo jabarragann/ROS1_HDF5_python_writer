@@ -18,7 +18,7 @@ from hdf5_saver.Hdf5Writer import (
 @pytest.fixture
 def config_batch_100() -> Hdf5FullDatasetConfig:
     my_config = Hdf5EntryConfig(
-        "camera_l", (100, 480, 640, 3), (None, 480, 640, 3), "gzip", np.uint8
+        "camera_l", (100, 480, 640, 3), (None, 480, 640, 3), "gzip", np.uint8, None, None, None
     )
 
     return Hdf5FullDatasetConfig([my_config])

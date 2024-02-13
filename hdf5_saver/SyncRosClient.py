@@ -7,42 +7,30 @@ import rospy
 from dataclasses import dataclass, field
 from abc import ABC
 import message_filters
-from hdf5_saver.custom_configs.hand_eye_dvrk_config import (
-    HandEyeRostopicsConfig,
-    get_topics_processing_cb,
-    selected_topics,
-    topic_to_key_in_container,
-)
+from hdf5_saver.Hdf5Writer import Hdf5EntryConfig, Hdf5FullDatasetConfig
 from queue import Empty, Queue
 
 
 @dataclass
 class DatasetSample:
-    left_rgb_img: np.ndarray
-    right_rgb_img: np.ndarray
-    measured_cp: np.ndarray = None
-    measured_jp: np.ndarray = None
+    __data_dict: Dict[str, np.ndarray] = field(default=dict, init=False)
 
-    @classmethod
-    def from_dict(cls: DatasetSample, data: dict[HandEyeRostopicsConfig, np.ndarray]):
-        # Map the keys to the class attributes
-        dict_variables = {}
-        for ros_topic_config, value in data.items():
-            dict_variables[ros_topic_config.value[2]] = value
-        return cls(**dict_variables)
+    def add_data(self, key, value):
+        self.__data_dict[key] = value
+
+    def copy_from_dict(self, data: dict[str, np.ndarray]):
+        self.__data_dict = {}
+        for key, value in data.items():
+            assert isinstance(
+                value, np.ndarray
+            ), f"Values for key {key} should be of type np.ndarray"
+            self.add_data(key, value)
+
+    def __getitem__(self, key):
+        return self.__data_dict[key]
 
     def to_dict(self) -> Dict[str, np.ndarray]:
-        """
-        Map a `DatasetSample` to a dictionary that can be consumed by the
-        `DataContainer`.  Keys in the output dictionary are defined by the
-        `topic_to_key_in_container` config dict
-        """
-        new_dict = {}
-
-        for topic, new_key in topic_to_key_in_container.items():
-            new_dict[new_key] = getattr(self, topic.value[2])
-
-        return new_dict
+        return self.__data_dict
 
 
 @dataclass
@@ -91,21 +79,33 @@ class AbstractSimulationClient(ABC):
 
 @dataclass
 class SyncRosClient(AbstractSimulationClient):
+    """
+    SyncRosClient requires keyword arguments in the constructor.
+    """
+
     data_queue: Queue = None
+    dataset_config: Hdf5FullDatasetConfig = None
+    collection_freq: float = None
+    print_cb_freq: bool = False
 
     def __post_init__(self):
-        if self.data_queue is None:
-            raise ValueError(
-                "data_queue should be provided in constructor as a keyword arg"
-            )
+        self.cb_timer = time.time()
+        self.collection_timer = time.time()
+
+        assert (
+            self.data_queue is not None
+        ), "data_queue should be provided in constructor as a keyword arg"
+        assert (
+            self.dataset_config is not None
+        ), "dataset_config should be provided in constructor as a keyword arg"
+        assert self.collection_freq is not None, "collection_freq should be provided"
 
         super().__post_init__()
         self.subscribers = []
-        self.callback_dict = get_topics_processing_cb()
 
-        for topic in selected_topics:
+        for config in self.dataset_config:
             self.subscribers.append(
-                message_filters.Subscriber(topic.value[0], topic.value[1])
+                message_filters.Subscriber(config.rostopic, config.msg_type)
             )
 
         # WARNING: TimeSynchronizer did not work. Use ApproximateTimeSynchronizer instead.
@@ -119,22 +119,48 @@ class SyncRosClient(AbstractSimulationClient):
 
     def cb(self, *inputs):
         raw_data_dict = {}
-        for input_msg, topic in zip(inputs, selected_topics):
-            raw_data_dict[topic] = self.callback_dict[topic](input_msg)
 
-        self.raw_data = DatasetSample.from_dict(raw_data_dict)
+        config: Hdf5EntryConfig
+        for input_msg, config in zip(inputs, self.dataset_config):
+            raw_data_dict[config.dataset_name] = config.processing_cb(input_msg)
 
-        self.data_queue.put(self.raw_data)
+        self.raw_data = DatasetSample()
+        self.raw_data.copy_from_dict(raw_data_dict)
+
+        if time.time() - self.collection_timer > 1 / self.collection_freq:
+            # print(f"Collection freq: {1/(time.time() - self.collection_timer)}")
+            self.data_queue.put(self.raw_data)
+            self.collection_timer = time.time()
+
+        if self.print_cb_freq:
+            print(f"Callback freq: {1/(time.time() - self.cb_timer)}")
+            self.cb_timer = time.time()
 
 
 def main():
+
+    from hdf5_saver.custom_configs.hand_eye_dvrk_config import HandEyeHdf5Config
+
+    config_list = [
+        HandEyeHdf5Config.camera_l,
+        HandEyeHdf5Config.psm1_measured_cp,
+        HandEyeHdf5Config.psm1_measured_jp,
+    ]
+    dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(config_list)
+
     data_queue = Queue()
-    sync_client = SyncRosClient(data_queue=data_queue)
+    sync_client = SyncRosClient(
+        dataset_config=dataset_config,
+        collection_freq=20,
+        data_queue=data_queue,
+        print_cb_freq=False,
+    )
     sync_client.wait_for_data()
     data = sync_client.get_data()
     print("data received!")
-    print(data.left_rgb_img.shape)
-    print(data.measured_jp)
+    print(data[HandEyeHdf5Config.camera_l.value[0]].shape)
+    print(data[HandEyeHdf5Config.psm1_measured_jp.value[0]])
+    rospy.spin()
 
 
 if __name__ == "__main__":

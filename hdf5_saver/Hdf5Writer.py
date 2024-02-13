@@ -6,7 +6,7 @@ import os
 import h5py
 from enum import Enum
 from enum import Enum
-from typing import Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 
 @dataclass
@@ -16,6 +16,9 @@ class Hdf5EntryConfig:
     max_shape: Tuple[int]
     compression: str
     dtype: np.dtype
+    rostopic: str
+    msg_type: Any
+    processing_cb: Callable
 
     def __post_init__(self):
         self.chunk_size = self.chunk_shape[0]
@@ -115,7 +118,8 @@ class HDF5Writer:
         self._internal_idx = 0
 
     def _create_path(self) -> Path:
-        if not os.path.exists(self.output_dir):
+        print(type(self.output_dir))
+        if not self.output_dir.exists():
             self.output_dir.mkdir(parents=True, exist_ok=True)
 
         if self.file_name is not None:
@@ -168,6 +172,7 @@ class HDF5Writer:
                 maxshape=config.max_shape,
                 compression=config.compression,
                 dtype=config.dtype,
+                chunks=True,
             )
 
     def write_chunk(self, data_container: DataContainer):

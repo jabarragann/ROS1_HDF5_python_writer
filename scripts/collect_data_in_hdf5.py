@@ -1,4 +1,5 @@
 from pathlib import Path
+import pathlib
 import time
 
 import rospy
@@ -19,9 +20,9 @@ QUEUE_MAX_SIZE = 1000
 dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
     [
         HandEyeHdf5Config.camera_l,
-        HandEyeHdf5Config.camera_r,
-        HandEyeHdf5Config.psm1_measured_cp,
-        HandEyeHdf5Config.psm1_measured_jp,
+        # HandEyeHdf5Config.camera_r,
+        # HandEyeHdf5Config.psm1_measured_cp,
+        # HandEyeHdf5Config.psm1_measured_jp,
     ]
 )
 
@@ -50,22 +51,28 @@ class TimerCb(Thread):
 
                 if data is not None:
                     if self.data_container.is_full():
+                        print(f"Writing data to container... ")
+                        begin_time = time.time()
                         self.write_data_and_empty_container()
+                        print(f"writing time: {time.time() - begin_time}")
+                        print(
+                            f"Wrote {len(self.hdf5_writer)} samples to h5 file. ",
+                            f"{self.data_queue.qsize()} samples left in data queue. ",
+                        )
 
                     self.data_container.add_data(data.to_dict())
 
                 time.sleep(0.005)
 
-                if (time.time() - log_time) > 4:
-                    log_time = time.time()
-                    # print(f"len of container {len(self.data_container)}")
-                    print(f"queue size {self.data_queue.qsize()}")
+                # if (time.time() - log_time) > 1:
+                #     log_time = time.time()
+                #     # print(f"len of container {len(self.data_container)}")
+                #     print(f"queue size {self.data_queue.qsize()}")
 
             if len(self.data_container) > 0:  # write any remaining data
                 self.hdf5_writer.write_chunk(self.data_container)
 
         print(f"Collected {total_data} samples")
-        print("timer finished")
 
     def write_data_and_empty_container(self):
         self.hdf5_writer.write_chunk(self.data_container)
@@ -85,13 +92,13 @@ class TimerCb(Thread):
 
 
 @click.command()
-@click.option(
-    "--output_dir", type=click.Path(file_okay=False, path_type=Path), default="temp"
-)
-def main(output_dir):
-
-    data_queue = Queue()
-    ros_client = SyncRosClient(data_queue=data_queue)
+@click.option("--output_dir", type=click.Path(file_okay=False), default="./temp")
+def main(output_dir: Path):
+    output_dir = Path(output_dir)
+    data_queue = Queue(maxsize=QUEUE_MAX_SIZE)
+    ros_client = SyncRosClient(
+        data_queue=data_queue, dataset_config=dataset_config, collection_freq=20
+    )
     hdf5_writer = HDF5Writer(output_dir, dataset_config)
     timer_cb = TimerCb(data_queue, hdf5_writer)
 

@@ -13,13 +13,24 @@ from hdf5_saver.RosUtilities import *
 # Handeye calibration config
 ##############################
 
-# fmt: off
-_chunk = 100 
-class HandEyeHdf5Config(Enum):
-    camera_l = ("camera_l", (_chunk, 480, 640, 3), (None, 480, 640, 3), "gzip", np.uint8)
-    camera_r = ("camera_r", (_chunk, 480, 640, 3), (None, 480, 640, 3), "gzip", np.uint8)
-    psm1_measured_cp = ("psm1_measured_cp", (_chunk, 4,4), (None, 4,4), "gzip", np.float64)
-    psm1_measured_jp = ("psm1_measured_jp", (_chunk, 6), (None, 6), "gzip", np.float64)
+"""
+Config element:
+
+camera_l = (
+    "camera_l",                              ## hdf5 dataset name 
+    (_chunk, 1024, 1280, 3),                 ## Chunk shape - Must match shape of data coming from Rostopic 
+    (None, 1024, 1280, 3),                   ## Max shape - similar to chunk shape 
+    "gzip",                                  ## compression for hdf5 dataset 
+    np.uint8,                                ## datatype for hdf5 dataset 
+    "/jhu_daVinci/decklink/left/image_raw",  ## rostopic where data is published 
+    Image,                                   ## message type 
+    processing callback                      ## processing callback that transforms message to numpy array
+)
+"""
+# Original dvrk resolution: 1024, 1280
+_chunk = 100
+image_processor = get_image_processor_with_resize((640, 480))
+
 
 class HandEyeRostopicsConfig(Enum):
     """
@@ -29,39 +40,61 @@ class HandEyeRostopicsConfig(Enum):
     attribute_name: corresponds to the attribute name in the DatasetSample class
     """
 
-    CAMERA_L_IMAGE = ( "/ambf/env/cameras/cameraL/ImageData", Image, "left_rgb_img")
-    CAMERA_R_IMAGE = ( "/ambf/env/cameras/cameraL2/ImageData", Image, "right_rgb_img")
-    MEASURED_CP = ("/CRTK/psm1/measured_cp", PoseStamped, "measured_cp")
-    MEASURED_JP = ("/CRTK/psm1/measured_js", JointState, "measured_jp")
+    CAMERA_L_IMAGE = ("/jhu_daVinci/decklink/left/image_raw", Image, image_processor)
+    CAMERA_R_IMAGE = ("/jhu_daVinci/decklink/right/image_raw", Image, image_processor)
+    MEASURED_CP = ("/PSM2/measured_cp", PoseStamped, processing_pose_data)
+    MEASURED_JP = ("/PSM2/measured_js", JointState, processing_joint_state_data)
 
-# Association between rostopics and the corresponding key in DataContainer
-topic_to_key_in_container = {
-    HandEyeRostopicsConfig.CAMERA_L_IMAGE: HandEyeHdf5Config.camera_l.value[0],
-    HandEyeRostopicsConfig.CAMERA_R_IMAGE: HandEyeHdf5Config.camera_r.value[0],
-    HandEyeRostopicsConfig.MEASURED_CP: HandEyeHdf5Config.psm1_measured_cp.value[0],
-    HandEyeRostopicsConfig.MEASURED_JP: HandEyeHdf5Config.psm1_measured_jp.value[0],
-}
 
-selected_topics = [
+class HandEyeHdf5Config(Enum):
+    camera_l = (
+        "camera_l",
+        (_chunk, 480, 640, 3),
+        (None, 480, 640, 3),
+        "gzip",
+        np.uint8,
+        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[0],
+        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[1],
+        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[2],
+    )
+    camera_r = (
+        "camera_r",
+        (_chunk, 480, 640, 3),
+        (None, 480, 640, 3),
+        "gzip",
+        np.uint8,
+        HandEyeRostopicsConfig.CAMERA_R_IMAGE.value[0],
+        HandEyeRostopicsConfig.CAMERA_R_IMAGE.value[1],
+        HandEyeRostopicsConfig.CAMERA_R_IMAGE.value[2],
+    )
+    psm1_measured_cp = (
+        "psm1_measured_cp",
+        (_chunk, 4, 4),
+        (None, 4, 4),
+        "gzip",
+        np.float64,
+        HandEyeRostopicsConfig.MEASURED_CP.value[0],
+        HandEyeRostopicsConfig.MEASURED_CP.value[1],
+        HandEyeRostopicsConfig.MEASURED_CP.value[2],
+    )
+    psm1_measured_jp = (
+        "psm1_measured_jp",
+        (_chunk, 6),
+        (None, 6),
+        "gzip",
+        np.float64,
+        HandEyeRostopicsConfig.MEASURED_JP.value[0],
+        HandEyeRostopicsConfig.MEASURED_JP.value[1],
+        HandEyeRostopicsConfig.MEASURED_JP.value[2],
+    )
+
+
+data_to_record = [
     HandEyeRostopicsConfig.CAMERA_L_IMAGE,
-    HandEyeRostopicsConfig.CAMERA_R_IMAGE,
+    # HandEyeRostopicsConfig.CAMERA_R_IMAGE,
     HandEyeRostopicsConfig.MEASURED_CP,
     HandEyeRostopicsConfig.MEASURED_JP,
 ]
-
-
-def get_topics_processing_cb() -> Dict[HandEyeRostopicsConfig, Callable[[Any]]]:
-    image_processor = get_image_processor()
-
-    TopicsProcessingCb = {
-        HandEyeRostopicsConfig.CAMERA_L_IMAGE: image_processor,
-        HandEyeRostopicsConfig.CAMERA_R_IMAGE: image_processor,
-        HandEyeRostopicsConfig.MEASURED_CP: processing_pose_data,
-        HandEyeRostopicsConfig.MEASURED_JP: processing_joint_state_data,
-    }
-
-    return TopicsProcessingCb
-# fmt: on
 
 
 if __name__ == "__main__":

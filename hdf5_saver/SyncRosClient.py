@@ -13,24 +13,25 @@ from queue import Empty, Queue
 
 @dataclass
 class DatasetSample:
-    __data_dict: Dict[str, np.ndarray] = field(default=dict, init=False)
+    dataset_config: Hdf5FullDatasetConfig
+    data_dict: Dict[str, np.ndarray] = field(default=dict, init=False)
 
     def add_data(self, key, value):
-        self.__data_dict[key] = value
+        self.data_dict[key] = value
 
     def copy_from_dict(self, data: dict[str, np.ndarray]):
-        self.__data_dict = {}
-        for key, value in data.items():
-            assert isinstance(
-                value, np.ndarray
-            ), f"Values for key {key} should be of type np.ndarray"
-            self.add_data(key, value)
+        self.data_dict = {}
+        try:
+            for config in self.dataset_config:
+                self.add_data(config.dataset_name, data[config.dataset_name])
+        except KeyError as e:
+            raise KeyError(f"Data for {config.dataset_name} is missing")
 
     def __getitem__(self, key):
-        return self.__data_dict[key]
+        return self.data_dict[key]
 
     def to_dict(self) -> Dict[str, np.ndarray]:
-        return self.__data_dict
+        return self.data_dict
 
 
 @dataclass
@@ -124,11 +125,11 @@ class SyncRosClient(AbstractSimulationClient):
         for input_msg, config in zip(inputs, self.dataset_config):
             raw_data_dict[config.dataset_name] = config.processing_cb(input_msg)
 
-        self.raw_data = DatasetSample()
-        self.raw_data.copy_from_dict(raw_data_dict)
+        self.raw_data = raw_data_dict 
 
         if time.time() - self.collection_timer > 1 / self.collection_freq:
             # print(f"Collection freq: {1/(time.time() - self.collection_timer)}")
+            # print(f"Data queue size: {self.data_queue.qsize()}")
             self.data_queue.put(self.raw_data)
             self.collection_timer = time.time()
 
@@ -151,7 +152,7 @@ def main():
     data_queue = Queue()
     sync_client = SyncRosClient(
         dataset_config=dataset_config,
-        collection_freq=20,
+        collection_freq=10,
         data_queue=data_queue,
         print_cb_freq=False,
     )
@@ -159,7 +160,10 @@ def main():
     data = sync_client.get_data()
     print("data received!")
     print(data[HandEyeHdf5Config.camera_l.value[0]].shape)
+    print(data[HandEyeHdf5Config.psm1_measured_cp.value[0]])
     print(data[HandEyeHdf5Config.psm1_measured_jp.value[0]])
+    print(f"queue size {data_queue.qsize()}")
+
     rospy.spin()
 
 

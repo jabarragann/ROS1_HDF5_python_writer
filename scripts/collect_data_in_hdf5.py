@@ -30,7 +30,7 @@ dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
 class TimerCb(Thread):
 
     def __init__(self, data_queue: Queue, hdf5_writer: HDF5Writer):
-        super(TimerCb, self).__init__()
+        super(TimerCb, self).__init__(daemon=False)
         self.data_queue: Queue[DatasetSample] = data_queue
         self.hdf5_writer = hdf5_writer
         self.data_container = DataContainer(self.hdf5_writer.dataset_config)
@@ -43,13 +43,14 @@ class TimerCb(Thread):
 
         with self.hdf5_writer:
             while not self.terminate_recording:
+                data = None
                 try:
-                    total_data += 1
                     data = self.data_queue.get_nowait()
                 except Empty:
                     pass
 
                 if data is not None:
+                    total_data += 1
                     if self.data_container.is_full():
                         print(f"Writing data to container... ")
                         begin_time = time.time()
@@ -60,7 +61,7 @@ class TimerCb(Thread):
                             f"{self.data_queue.qsize()} samples left in data queue. ",
                         )
 
-                    self.data_container.add_data(data.to_dict())
+                    self.data_container.add_data(data)
 
                 time.sleep(0.005)
 

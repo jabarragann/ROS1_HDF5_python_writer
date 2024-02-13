@@ -1,3 +1,6 @@
+# Lessons:
+* PNG images will be smaller than storing data as numpy arrays in an HDF5 file. Even with the compression applied.
+
 # Related links
 
 * [hdf5 for large image dataset](https://blade6570.github.io/soumyatripathy/hdf5_blog.html)

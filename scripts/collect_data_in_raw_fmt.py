@@ -148,11 +148,15 @@ class TimerCb(Thread):
 @click.command()
 @click.option("--output_dir", type=click.Path(file_okay=False), default="./temp")
 @click.option("--append_to_name", type=str, default="")
-def main(output_dir: Path, append_to_name: str):
+@click.option("--delay_collection_by", type=float, default=0.0)
+def main(output_dir: Path, append_to_name: str, delay_collection_by: float):
 
     ts = time.strftime("%Y%m%d_%H%M%S")
     output_dir = Path(output_dir) / (ts + "_raw_dataset_" + append_to_name)
     data_queue = Queue(maxsize=QUEUE_MAX_SIZE)
+
+    print(f"Starting collection in {delay_collection_by} seconds ...")
+    time.sleep(delay_collection_by)
     ros_client = SyncRosClient(
         data_queue=data_queue, dataset_config=dataset_config, collection_freq=5
     )

@@ -43,9 +43,10 @@ class HandEyeRostopicsConfig(Enum):
 
     CAMERA_L_IMG_RAW = ("/jhu_daVinci/decklink/left/image_raw", Image, image_processor)
     CAMERA_R_IMG_RAW = ("/jhu_daVinci/decklink/right/image_raw", Image, image_processor)
-    CAMERA_L_IMG_RECT = ("/jhu_daVinci/decklink/left/image_rect_color", Image, image_processor)
-    CAMERA_R_IMG_RECT = ("/jhu_daVinci/decklink/right/image_rect_color", Image, image_processor)
+    CAMERA_L_IMG_RECT = ( "/jhu_daVinci/decklink/left/image_rect_color", Image, image_processor)
+    CAMERA_R_IMG_RECT = ( "/jhu_daVinci/decklink/right/image_rect_color", Image, image_processor)
     MEASURED_CP = ("/PSM2/measured_cp", PoseStamped, processing_pose_data)
+    MEASURED_CP_LOCAL = ("/PSM2/local/measured_cp", PoseStamped, processing_pose_data)
     MEASURED_JP = ("/PSM2/measured_js", JointState, processing_joint_state_data)
 
 
@@ -66,8 +67,8 @@ class HandEyeHdf5Config(Enum):
         (None, 1024, 1280, 3),
         "gzip",
         np.uint8,
-        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[0],
-        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[1],
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RECT.value[0],
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RECT.value[1],
         image_processor,
     )
     camera_r = (
@@ -76,9 +77,9 @@ class HandEyeHdf5Config(Enum):
         (None, 480, 640, 3),
         "gzip",
         np.uint8,
-        HandEyeRostopicsConfig.CAMERA_R_IMAGE.value[0],
-        HandEyeRostopicsConfig.CAMERA_R_IMAGE.value[1],
-        HandEyeRostopicsConfig.CAMERA_R_IMAGE.value[2],
+        HandEyeRostopicsConfig.CAMERA_R_IMG_RAW.value[0],
+        HandEyeRostopicsConfig.CAMERA_R_IMG_RAW.value[1],
+        HandEyeRostopicsConfig.CAMERA_R_IMG_RAW.value[2],
     )
     psm1_measured_cp = (
         "psm1_measured_cp",
@@ -86,9 +87,9 @@ class HandEyeHdf5Config(Enum):
         (None, 4, 4),
         "gzip",
         np.float64,
-        HandEyeRostopicsConfig.MEASURED_CP.value[0],
-        HandEyeRostopicsConfig.MEASURED_CP.value[1],
-        HandEyeRostopicsConfig.MEASURED_CP.value[2],
+        HandEyeRostopicsConfig.MEASURED_CP_LOCAL.value[0],
+        HandEyeRostopicsConfig.MEASURED_CP_LOCAL.value[1],
+        HandEyeRostopicsConfig.MEASURED_CP_LOCAL.value[2],
     )
     psm1_measured_jp = (
         "psm1_measured_jp",
@@ -100,14 +101,6 @@ class HandEyeHdf5Config(Enum):
         HandEyeRostopicsConfig.MEASURED_JP.value[1],
         HandEyeRostopicsConfig.MEASURED_JP.value[2],
     )
-
-
-data_to_record = [
-    HandEyeRostopicsConfig.CAMERA_L_IMAGE,
-    # HandEyeRostopicsConfig.CAMERA_R_IMAGE,
-    HandEyeRostopicsConfig.MEASURED_CP,
-    HandEyeRostopicsConfig.MEASURED_JP,
-]
 
 
 if __name__ == "__main__":

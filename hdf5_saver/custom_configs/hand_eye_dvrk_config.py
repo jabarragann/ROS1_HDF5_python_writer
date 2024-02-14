@@ -41,8 +41,10 @@ class HandEyeRostopicsConfig(Enum):
     attribute_name: corresponds to the attribute name in the DatasetSample class
     """
 
-    CAMERA_L_IMAGE = ("/jhu_daVinci/decklink/left/image_raw", Image, image_processor)
-    CAMERA_R_IMAGE = ("/jhu_daVinci/decklink/right/image_raw", Image, image_processor)
+    CAMERA_L_IMG_RAW = ("/jhu_daVinci/decklink/left/image_raw", Image, image_processor)
+    CAMERA_R_IMG_RAW = ("/jhu_daVinci/decklink/right/image_raw", Image, image_processor)
+    CAMERA_L_IMG_RECT = ("/jhu_daVinci/decklink/left/image_rect_color", Image, image_processor)
+    CAMERA_R_IMG_RECT = ("/jhu_daVinci/decklink/right/image_rect_color", Image, image_processor)
     MEASURED_CP = ("/PSM2/measured_cp", PoseStamped, processing_pose_data)
     MEASURED_JP = ("/PSM2/measured_js", JointState, processing_joint_state_data)
 
@@ -54,8 +56,8 @@ class HandEyeHdf5Config(Enum):
         (None, 480, 640, 3),
         "gzip",
         np.uint8,
-        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[0],
-        HandEyeRostopicsConfig.CAMERA_L_IMAGE.value[1],
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[0],
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[1],
         resize_image_processor,
     )
     camera_l = (

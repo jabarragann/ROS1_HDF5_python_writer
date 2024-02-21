@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 import pandas as pd
 import time
 import cv2
@@ -14,17 +15,15 @@ from hdf5_saver.custom_configs.hand_eye_dvrk_config import (
     HandEyeHdf5Config,
 )
 from queue import Empty, Queue
-from threading import Thread, Lock
+from threading import Thread
 import click
-from sensor_msgs.msg import Image, JointState
-from geometry_msgs.msg import PoseStamped
 
 QUEUE_MAX_SIZE = 1000
 dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
     [
         HandEyeHdf5Config.camera_l,
         HandEyeHdf5Config.camera_r,
-        HandEyeHdf5Config.psm1_measured_cp,
+        # HandEyeHdf5Config.psm1_measured_cp,
         HandEyeHdf5Config.psm1_measured_jp,
     ]
 )
@@ -47,7 +46,7 @@ class TimerCb(Thread):
         self.joint_data = []
         self.pose_data = []
         # fmt: off
-        self.joint_headers = ["j1","j2","j3","j4","j5","j6"]
+        self.joint_headers = ["j1","j2","j3","j4","j5","j6","j7"]
         self.pose_headers = ["p1","p2","p3","p4","p5","p6","p7","p8","p9","p10","p11","p12","p13","p14","p15","p16"] 
         # fmt: on
 
@@ -67,13 +66,11 @@ class TimerCb(Thread):
         try:
             self.record_data_loop()
         finally:
-            self.joint_data: np.ndarray = np.vstack(self.joint_data)
-            self.pose_data: np.ndarray = np.vstack(self.pose_data)
-            pd.DataFrame(self.joint_data, columns=self.joint_headers).to_csv(
-                self.dataset_root / "joint_data.csv"
+            self.joint_data = self.save_csv_data(
+                self.joint_data, "joint_data.csv", self.joint_headers
             )
-            pd.DataFrame(self.pose_data, columns=self.pose_headers).to_csv(
-                self.dataset_root / "pose_data.csv"
+            self.pose_data = self.save_csv_data(
+                self.pose_data, "pose_data.csv", self.pose_headers
             )
 
         print(f"total images:    {self.saved_points}")
@@ -81,6 +78,16 @@ class TimerCb(Thread):
         print(f"total jp:        {self.joint_data.shape[0]}")
         print(f"Data queue size: {self.data_queue.qsize()}")
         print(f"Collected {self.saved_points} samples")
+
+    def save_csv_data(
+        self, data: List[np.ndarray], file_name: str, headers: List[str]
+    ) -> np.ndarray:
+        if len(data) > 0:
+            data = np.vstack(data).squeeze()
+            pd.DataFrame(data, columns=headers).to_csv(self.dataset_root / file_name)
+            return data
+        else:
+            return np.zeros(0)
 
     def record_data_loop(self):
         print("writing data ....")
@@ -152,7 +159,11 @@ class TimerCb(Thread):
 def main(output_dir: Path, append_to_name: str, delay_collection_by: float):
 
     ts = time.strftime("%Y%m%d_%H%M%S")
-    output_dir = Path(output_dir) / (ts + "_raw_dataset_" + append_to_name)
+    if append_to_name != "":
+        output_dir = Path(output_dir) / (ts + "_" + append_to_name)
+    else:
+        output_dir = Path(output_dir) / (ts + "_raw_dataset")
+
     data_queue = Queue(maxsize=QUEUE_MAX_SIZE)
 
     print(f"Starting collection in {delay_collection_by} seconds ...")

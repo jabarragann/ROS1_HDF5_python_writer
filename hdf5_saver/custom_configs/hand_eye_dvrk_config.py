@@ -74,6 +74,26 @@ class HandEyeHdf5Config(Enum):
         HandEyeRostopicsConfig.CAMERA_R_IMG_RAW.value[1],
         HandEyeRostopicsConfig.CAMERA_R_IMG_RAW.value[2],
     )
+    camera_l_rect = (
+        "camera_l_rect"                                   
+        (_chunk, 1024, 1280, 3),                          
+        (None, 1024, 1280, 3),                            
+        "gzip",                                           
+        np.uint8,                                         
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RECT.value[0], 
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RECT.value[1], 
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RECT.value[2], 
+    )
+    camera_r_rect = (
+        "camera_r_rect",
+        (_chunk, 480, 640, 3),
+        (None, 480, 640, 3),
+        "gzip",
+        np.uint8,
+        HandEyeRostopicsConfig.CAMERA_R_IMG_RECT.value[0],
+        HandEyeRostopicsConfig.CAMERA_R_IMG_RECT.value[1],
+        HandEyeRostopicsConfig.CAMERA_R_IMG_RECT.value[2],
+    )
     psm1_measured_cp = (
         "psm1_measured_cp",
         (_chunk, 4, 4),

@@ -22,7 +22,9 @@ QUEUE_MAX_SIZE = 1000
 dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
     [
         HandEyeHdf5Config.camera_l,
-        HandEyeHdf5Config.camera_r,
+        HandEyeHdf5Config.camera_l_rect,
+        # HandEyeHdf5Config.camera_r,
+        # HandEyeHdf5Config.camera_r_rect,
         HandEyeHdf5Config.psm1_measured_cp,
         HandEyeHdf5Config.psm1_measured_jp,
     ]

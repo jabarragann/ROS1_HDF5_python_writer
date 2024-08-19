@@ -41,35 +41,28 @@ class HandEyeRostopicsConfig(Enum):
     attribute_name: corresponds to the attribute name in the DatasetSample class
     """
 
-    CAMERA_L_IMG_RAW = ("/jhu_daVinci/decklink/left/image_raw", Image, image_processor)
-    CAMERA_R_IMG_RAW = ("/jhu_daVinci/decklink/right/image_raw", Image, image_processor)
+    CAMERA_L_IMG_RAW = ("/ambf/env/cameras/cameraL/ImageData", Image, image_processor)
+    CAMERA_R_IMG_RAW = ("/ambf/env/cameras/cameraR/ImageData", Image, image_processor)
     CAMERA_L_IMG_RECT = ( "/jhu_daVinci/decklink/left/image_rect_color", Image, image_processor)
     CAMERA_R_IMG_RECT = ( "/jhu_daVinci/decklink/right/image_rect_color", Image, image_processor)
-    MEASURED_CP = ("/PSM2/measured_cp", PoseStamped, processing_pose_data)
-    MEASURED_CP_LOCAL = ("/PSM2/local/measured_cp", PoseStamped, processing_pose_data)
-    MEASURED_JP = ("/PSM2/measured_js", JointState, processing_joint_state_data)
+    MEASURED_CP = ("/CRTK/psm2/measured_cp", PoseStamped, processing_pose_data)
+    MEASURED_CP_LOCAL = ("/CRTK/psm1/measured_cp", PoseStamped, processing_pose_data)
+    MEASURED_JP = ("/CRTK/psm2/measured_js", JointState, processing_joint_state_data)
 
 
 class HandEyeHdf5Config(Enum):
-    camera_l_resized = (
-        "camera_l",
-        (_chunk, 480, 640, 3),
-        (None, 480, 640, 3),
-        "gzip",
-        np.uint8,
-        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[0],
-        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[1],
-        resize_image_processor,
-    )
+    """ Dataset configuration
+    Follow the template below to create new dataset config entries.
+    """
     camera_l = (
-        "camera_l",
-        (_chunk, 1024, 1280, 3),
-        (None, 1024, 1280, 3),
-        "gzip",
-        np.uint8,
-        HandEyeRostopicsConfig.CAMERA_L_IMG_RECT.value[0],
-        HandEyeRostopicsConfig.CAMERA_L_IMG_RECT.value[1],
-        image_processor,
+        "camera_l",                                       # dataset name 
+        (_chunk, 1024, 1280, 3),                          # size of chunk 
+        (None, 1024, 1280, 3),                            # max shape
+        "gzip",                                           # compression
+        np.uint8,                                         # datatype
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[0], # rostopic
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[1], # ros message type
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[2], # processing callback
     )
     camera_r = (
         "camera_r",
@@ -100,6 +93,16 @@ class HandEyeHdf5Config(Enum):
         HandEyeRostopicsConfig.MEASURED_JP.value[0],
         HandEyeRostopicsConfig.MEASURED_JP.value[1],
         HandEyeRostopicsConfig.MEASURED_JP.value[2],
+    )
+    camera_l_resized = (
+        "camera_l",
+        (_chunk, 480, 640, 3),
+        (None, 480, 640, 3),
+        "gzip",
+        np.uint8,
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[0],
+        HandEyeRostopicsConfig.CAMERA_L_IMG_RAW.value[1],
+        resize_image_processor, # Resize image on the fly
     )
 
 

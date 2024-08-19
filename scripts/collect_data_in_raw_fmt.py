@@ -23,7 +23,7 @@ dataset_config = Hdf5FullDatasetConfig.create_from_enum_list(
     [
         HandEyeHdf5Config.camera_l,
         HandEyeHdf5Config.camera_r,
-        # HandEyeHdf5Config.psm1_measured_cp,
+        HandEyeHdf5Config.psm1_measured_cp,
         HandEyeHdf5Config.psm1_measured_jp,
     ]
 )
@@ -46,7 +46,7 @@ class TimerCb(Thread):
         self.joint_data = []
         self.pose_data = []
         # fmt: off
-        self.joint_headers = ["j1","j2","j3","j4","j5","j6","j7"]
+        self.joint_headers = ["j1","j2","j3","j4","j5","j6", "j7"]
         self.pose_headers = ["p1","p2","p3","p4","p5","p6","p7","p8","p9","p10","p11","p12","p13","p14","p15","p16"] 
         # fmt: on
 
@@ -84,7 +84,14 @@ class TimerCb(Thread):
     ) -> np.ndarray:
         if len(data) > 0:
             data = np.vstack(data).squeeze()
+
+            if data.shape[1] != len(headers):
+                raise RuntimeError(
+                    f"Data shape and headers mismatch. data.shape[1] = {data.shape[1]} and len(headers) =  {len(headers)}. Modify headers to match data."
+                )
+
             pd.DataFrame(data, columns=headers).to_csv(self.dataset_root / file_name)
+
             return data
         else:
             return np.zeros(0)

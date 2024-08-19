@@ -46,7 +46,7 @@ class TimerCb(Thread):
         self.joint_data = []
         self.pose_data = []
         # fmt: off
-        self.joint_headers = ["j1","j2","j3","j4","j5","j6", "j7"]
+        self.joint_headers = ["j1","j2","j3","j4","j5","j6"]
         self.pose_headers = ["p1","p2","p3","p4","p5","p6","p7","p8","p9","p10","p11","p12","p13","p14","p15","p16"] 
         # fmt: on
 
